@@ -1,5 +1,6 @@
 package com.robert.shipgame.auction.listing.data;
 
+import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.sale.data.SaleDAO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Positive;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity(name = "AuctionListing")
@@ -34,5 +36,8 @@ public final class AuctionListingDAO {
 
     @OneToOne(cascade = CascadeType.ALL)
     private SaleDAO sale;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<BidDAO> bids;
 
 }

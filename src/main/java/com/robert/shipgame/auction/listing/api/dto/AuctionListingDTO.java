@@ -10,6 +10,7 @@ import java.util.UUID;
 public record AuctionListingDTO(UUID id,
                                 String name,
                                 BigDecimal price,
+                                BigDecimal highestBid,
                                 Instant whenListed,
                                 Instant whenExpires,
                                 Instant whenSold) {

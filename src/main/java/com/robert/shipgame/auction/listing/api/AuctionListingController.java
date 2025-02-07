@@ -3,7 +3,10 @@ package com.robert.shipgame.auction.listing.api;
 import com.robert.shipgame.auction.listing.AuctionListingMapper;
 import com.robert.shipgame.auction.listing.api.dto.AuctionListingDTO;
 import com.robert.shipgame.auction.listing.api.dto.CreateOrUpdateAuctionListingDTO;
+import com.robert.shipgame.auction.listing.api.dto.PlaceBidDTO;
+import com.robert.shipgame.auction.listing.api.dto.PurchaseAuctionListingDTO;
 import com.robert.shipgame.auction.listing.exception.AuctionListingNotFoundException;
+import com.robert.shipgame.auction.listing.exception.AuctionListingPurchaseException;
 import com.robert.shipgame.auction.listing.service.AuctionListingService;
 import com.robert.shipgame.auction.sale.SaleMapper;
 import com.robert.shipgame.auction.sale.api.SaleDTO;
@@ -37,14 +40,28 @@ public class AuctionListingController {
     }
 
     @PostMapping("/purchase/{auctionListingId}")
-    public SaleDTO purchase(@PathVariable final UUID auctionListingId) {
-        return SaleMapper.INSTANCE.pojoToDto(auctionListingService.purchase(auctionListingId));
+    public SaleDTO purchase(@PathVariable final UUID auctionListingId,
+                            @RequestBody @Valid PurchaseAuctionListingDTO dto) {
+        return SaleMapper.INSTANCE.pojoToDto(auctionListingService.purchase(auctionListingId, dto.price()));
+    }
+
+    @PostMapping("/bid/{auctionListingId}")
+    public AuctionListingDTO placeBid(@PathVariable final UUID auctionListingId,
+                                      @RequestBody @Valid PlaceBidDTO dto) {
+        return AuctionListingMapper.INSTANCE.pojoToDTO(auctionListingService.placeBid(auctionListingId, dto.price()));
     }
 
     @ExceptionHandler(AuctionListingNotFoundException.class)
-    public ResponseEntity<Object> handleAuctionListingException(AuctionListingNotFoundException exception) {
+    public ResponseEntity<Object> handleAuctionListingNotFoundException(AuctionListingNotFoundException exception) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(exception.getMessage());
+    }
+
+    @ExceptionHandler(AuctionListingPurchaseException.class)
+    public ResponseEntity<Object> handleAuctionListingPurchaseException(AuctionListingPurchaseException exception) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(exception.getMessage());
     }
 
