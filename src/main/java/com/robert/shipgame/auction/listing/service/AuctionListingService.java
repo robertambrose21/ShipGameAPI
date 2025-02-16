@@ -1,10 +1,11 @@
 package com.robert.shipgame.auction.listing.service;
 
+import com.robert.shipgame.auction.bid.data.BidDAO;
+import com.robert.shipgame.auction.bid.service.Bid;
 import com.robert.shipgame.auction.listing.AuctionListingMapper;
 import com.robert.shipgame.auction.listing.api.dto.CreateOrUpdateAuctionListingDTO;
 import com.robert.shipgame.auction.listing.data.AuctionListingDAO;
 import com.robert.shipgame.auction.listing.data.AuctionListingRepository;
-import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.listing.exception.AuctionListingNotFoundException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingPurchaseException;
 import com.robert.shipgame.auction.sale.SaleMapper;
@@ -16,7 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +46,15 @@ public class AuctionListingService {
 
     public Optional<AuctionListing> getListing(final UUID id) {
         return auctionListingRepository.findById(id).map(AuctionListingMapper.INSTANCE::daoToPojo);
+    }
+
+    public List<Bid> getBidsForAuction(final UUID auctionListingId) {
+        final AuctionListing listing = getListing(auctionListingId).orElseThrow(() ->
+                new AuctionListingNotFoundException("Auction listing with id " + auctionListingId + " does not exist."));
+
+        listing.bids().sort(Comparator.comparing(Bid::price).reversed());
+
+        return listing.bids();
     }
 
     @Transactional

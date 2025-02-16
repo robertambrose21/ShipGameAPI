@@ -1,5 +1,7 @@
 package com.robert.shipgame.auction.listing.api;
 
+import com.robert.shipgame.auction.bid.BidMapper;
+import com.robert.shipgame.auction.bid.api.dto.BidDTO;
 import com.robert.shipgame.auction.listing.AuctionListingMapper;
 import com.robert.shipgame.auction.listing.api.dto.AuctionListingDTO;
 import com.robert.shipgame.auction.listing.api.dto.CreateOrUpdateAuctionListingDTO;
@@ -14,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,10 +30,18 @@ public class AuctionListingController {
 
     private final AuctionListingService auctionListingService;
 
+    @PreAuthorize("hasAuthority('Admin')")
     @GetMapping
     public List<AuctionListingDTO> getAllListings() {
         return auctionListingService.getAllListings().stream()
                 .map(AuctionListingMapper.INSTANCE::pojoToDTO)
+                .toList();
+    }
+
+    @GetMapping("/bids/{auctionListingId}")
+    public List<BidDTO> getBidsForAuction(@PathVariable final UUID auctionListingId) {
+        return auctionListingService.getBidsForAuction(auctionListingId).stream()
+                .map(BidMapper.INSTANCE::pojoToDTO)
                 .toList();
     }
 
