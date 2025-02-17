@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record Bid(UUID id, BigDecimal price, Instant whenPlaced) {
+public record Bid(UUID id,  UUID placedBy, BigDecimal price, Instant whenPlaced) {
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 @Builder
 public record AuctionListingDTO(UUID id,
+                                UUID placedBy,
                                 String name,
                                 BigDecimal price,
                                 BigDecimal highestBid,

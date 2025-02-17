@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record AuctionListing(UUID id,
+                             UUID placedBy,
                              String name,
                              BigDecimal price,
                              List<Bid> bids,

@@ -1,5 +1,6 @@
 package com.robert.shipgame.auction.listing.data;
 
+import com.robert.shipgame.account.data.AccountDAO;
 import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.sale.data.SaleDAO;
 import jakarta.persistence.*;
@@ -39,5 +40,8 @@ public final class AuctionListingDAO {
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<BidDAO> bids;
+
+    @ManyToOne
+    private AccountDAO placedBy;
 
 }

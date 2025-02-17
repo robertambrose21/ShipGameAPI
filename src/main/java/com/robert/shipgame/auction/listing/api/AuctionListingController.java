@@ -7,6 +7,7 @@ import com.robert.shipgame.auction.listing.api.dto.AuctionListingDTO;
 import com.robert.shipgame.auction.listing.api.dto.CreateOrUpdateAuctionListingDTO;
 import com.robert.shipgame.auction.listing.api.dto.PlaceBidDTO;
 import com.robert.shipgame.auction.listing.api.dto.PurchaseAuctionListingDTO;
+import com.robert.shipgame.auction.listing.exception.AuctionListingException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingNotFoundException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingPurchaseException;
 import com.robert.shipgame.auction.listing.service.AuctionListingService;
@@ -69,8 +70,8 @@ public class AuctionListingController {
                 .body(exception.getMessage());
     }
 
-    @ExceptionHandler(AuctionListingPurchaseException.class)
-    public ResponseEntity<Object> handleAuctionListingPurchaseException(AuctionListingPurchaseException exception) {
+    @ExceptionHandler(AuctionListingException.class)
+    public ResponseEntity<Object> handleAuctionListingException(AuctionListingException exception) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(exception.getMessage());

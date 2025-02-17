@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record BidDTO(UUID id, BigDecimal price, Instant whenPlaced) {
+public record BidDTO(UUID id, UUID placedBy, BigDecimal price, Instant whenPlaced) {
 }

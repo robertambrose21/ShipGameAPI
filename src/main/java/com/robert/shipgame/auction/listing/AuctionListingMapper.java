@@ -22,6 +22,7 @@ public interface AuctionListingMapper {
     @Mapping(source = "bids", target = "highestBid", qualifiedByName = "mapHighestBid")
     AuctionListingDTO pojoToDTO(AuctionListing auctionListing);
 
+    @Mapping(source = "placedBy.id", target = "placedBy")
     @Mapping(source = "sale.whenSold", target = "whenSold")
     AuctionListing daoToPojo(AuctionListingDAO auctionListingDAO);
 

@@ -1,11 +1,15 @@
 package com.robert.shipgame.auction.listing.service;
 
+import com.robert.shipgame.account.AccountMapper;
+import com.robert.shipgame.account.data.AccountDAO;
+import com.robert.shipgame.account.service.AccountService;
 import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.bid.service.Bid;
 import com.robert.shipgame.auction.listing.AuctionListingMapper;
 import com.robert.shipgame.auction.listing.api.dto.CreateOrUpdateAuctionListingDTO;
 import com.robert.shipgame.auction.listing.data.AuctionListingDAO;
 import com.robert.shipgame.auction.listing.data.AuctionListingRepository;
+import com.robert.shipgame.auction.listing.exception.AuctionListingException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingNotFoundException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingPurchaseException;
 import com.robert.shipgame.auction.sale.SaleMapper;
@@ -27,6 +31,7 @@ import java.util.UUID;
 public class AuctionListingService {
 
     private final AuctionListingRepository auctionListingRepository;
+    private final AccountService accountService;
 
     public List<AuctionListing> getAllListings() {
         return auctionListingRepository.findAll().stream()
@@ -35,7 +40,16 @@ public class AuctionListingService {
     }
 
     public AuctionListing addListing(final CreateOrUpdateAuctionListingDTO dto) {
+        final AccountDAO placedBy = accountService.getLoggedInAccount()
+                .map(AccountMapper.INSTANCE::pojoToDAO)
+                .orElseThrow(() -> new AuctionListingException("Cannot create an auction listing without a logged in user"));
+
+        if(dto.whenExpires().compareTo(Instant.now()) <= 0) {
+            throw new AuctionListingException("Auction cannot expire before it's creation date");
+        }
+
         final AuctionListingDAO listing = AuctionListingDAO.builder()
+                .placedBy(placedBy)
                 .name(dto.name())
                 .price(dto.price())
                 .whenExpires(dto.whenExpires())
@@ -59,8 +73,16 @@ public class AuctionListingService {
 
     @Transactional
     public AuctionListing placeBid(final UUID auctionListingId, final BigDecimal price) {
+        final AccountDAO placedBy = accountService.getLoggedInAccount()
+                .map(AccountMapper.INSTANCE::pojoToDAO)
+                .orElseThrow(() -> new AuctionListingException("Cannot place a bid on an auction without a logged in user"));
+
         final AuctionListingDAO listing = auctionListingRepository.findById(auctionListingId).orElseThrow(() ->
                 new AuctionListingNotFoundException("Auction listing with id " + auctionListingId + " does not exist."));
+
+        if(listing.getPlacedBy().getId() == placedBy.getId()) {
+            throw new AuctionListingException("Cannot place a bid on own auction");
+        }
 
         final BigDecimal highestBid = listing.getBids().stream()
                 .max(Comparator.comparing(BidDAO::getPrice))
@@ -75,6 +97,7 @@ public class AuctionListingService {
                 BidDAO.builder()
                         .price(price)
                         .whenPlaced(Instant.now())
+                        .placedBy(placedBy)
                         .build());
 
         return AuctionListingMapper.INSTANCE.daoToPojo(auctionListingRepository.save(listing));
