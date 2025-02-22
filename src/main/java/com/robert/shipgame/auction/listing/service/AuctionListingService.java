@@ -2,6 +2,7 @@ package com.robert.shipgame.auction.listing.service;
 
 import com.robert.shipgame.account.AccountMapper;
 import com.robert.shipgame.account.data.AccountDAO;
+import com.robert.shipgame.account.service.Account;
 import com.robert.shipgame.account.service.AccountService;
 import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.bid.service.Bid;
@@ -44,6 +45,10 @@ public class AuctionListingService {
                 .map(AccountMapper.INSTANCE::pojoToDAO)
                 .orElseThrow(() -> new AuctionListingException("Cannot create an auction listing without a logged in user"));
 
+        if(dto.minimumBid() == null) {
+            throw new AuctionListingException("Cannot create an auction without a minimum bid");
+        }
+
         if(dto.whenExpires().compareTo(Instant.now()) <= 0) {
             throw new AuctionListingException("Auction cannot expire before it's creation date");
         }
@@ -51,8 +56,8 @@ public class AuctionListingService {
         final AuctionListingDAO listing = AuctionListingDAO.builder()
                 .placedBy(placedBy)
                 .name(dto.name())
-                .price(dto.price())
-                .whenExpires(dto.whenExpires())
+                .buyoutPrice(dto.price())
+                .whenExpired(dto.whenExpires())
                 .build();
 
         return AuctionListingMapper.INSTANCE.daoToPojo(auctionListingRepository.save(listing));
@@ -72,16 +77,31 @@ public class AuctionListingService {
     }
 
     @Transactional
-    public AuctionListing placeBid(final UUID auctionListingId, final BigDecimal price) {
-        final AccountDAO placedBy = accountService.getLoggedInAccount()
-                .map(AccountMapper.INSTANCE::pojoToDAO)
-                .orElseThrow(() -> new AuctionListingException("Cannot place a bid on an auction without a logged in user"));
-
+    public AuctionListing placeBid(final UUID auctionListingId, final BigDecimal price, final Account purchaser) {
         final AuctionListingDAO listing = auctionListingRepository.findById(auctionListingId).orElseThrow(() ->
                 new AuctionListingNotFoundException("Auction listing with id " + auctionListingId + " does not exist."));
 
-        if(listing.getPlacedBy().getId() == placedBy.getId()) {
-            throw new AuctionListingException("Cannot place a bid on own auction");
+        if(listing.getWhenExpired().compareTo(Instant.now()) <= 0) {
+            throw new AuctionListingPurchaseException("Cannot place bid on expired auction");
+        }
+
+        if(listing.getSale() != null) {
+            throw new AuctionListingPurchaseException("Cannot place bid on auction, auction already sold");
+        }
+
+        if(listing.getWhenFinalised() != null) {
+            throw new AuctionListingPurchaseException("Auction has already been finalised, cannot place bid");
+        }
+
+        if(listing.getPlacedBy().getId() == purchaser.id()) {
+            throw new AuctionListingPurchaseException("Cannot place a bid on own auction");
+        }
+
+        if(price.compareTo(listing.getMinimumBidPrice()) < 0) {
+            throw new AuctionListingPurchaseException("Cannot placed bid of " +
+                    price +
+                    ", below minimum bid price of " +
+                    listing.getMinimumBidPrice());
         }
 
         final BigDecimal highestBid = listing.getBids().stream()
@@ -89,7 +109,7 @@ public class AuctionListingService {
                 .map(BidDAO::getPrice)
                 .orElse(BigDecimal.ZERO);
 
-        if(price.compareTo(highestBid) < 0) {
+        if(price.compareTo(highestBid) <= 0) {
             throw new AuctionListingPurchaseException("Bid does not exceed current highest bid of " + highestBid);
         }
 
@@ -97,29 +117,43 @@ public class AuctionListingService {
                 BidDAO.builder()
                         .price(price)
                         .whenPlaced(Instant.now())
-                        .placedBy(placedBy)
+                        .placedBy(AccountMapper.INSTANCE.pojoToDAO(purchaser))
                         .build());
 
         return AuctionListingMapper.INSTANCE.daoToPojo(auctionListingRepository.save(listing));
     }
 
     @Transactional
-    public Sale purchase(final UUID auctionListingId, final BigDecimal price) {
+    public Sale purchase(final UUID auctionListingId, final BigDecimal price, final Account purchaser) {
         final AuctionListingDAO listing = auctionListingRepository.findById(auctionListingId).orElseThrow(() ->
                 new AuctionListingNotFoundException("Auction listing with id " + auctionListingId + " does not exist."));
 
-        if(price.compareTo(listing.getPrice()) < 0) {
-            throw new AuctionListingPurchaseException("Purchase price does not match auction price of " + listing.getPrice());
+        if(listing.getWhenExpired().compareTo(Instant.now()) <= 0) {
+            throw new AuctionListingPurchaseException("Cannot purchase expired auction");
         }
 
-        listing.setPrice(price);
+        if(listing.getSale() != null) {
+            throw new AuctionListingPurchaseException("Cannot purchase auction, auction already sold");
+        }
+
+        if(listing.getWhenFinalised() != null) {
+            throw new AuctionListingPurchaseException("Auction has already been finalised, cannot purchase");
+        }
+
+        if(price.compareTo(listing.getBuyoutPrice()) < 0) {
+            throw new AuctionListingPurchaseException("Purchase buyoutPrice does not match auction buyoutPrice of " + listing.getBuyoutPrice());
+        }
+
+        listing.setBuyoutPrice(price);
 
         final SaleDAO sale = SaleDAO.builder()
                 .auctionListing(listing)
                 .whenSold(Instant.now())
+                .purchaser(AccountMapper.INSTANCE.pojoToDAO(purchaser))
                 .build();
 
         listing.setSale(sale);
+        listing.setWhenFinalised(Instant.now());
 
         return SaleMapper.INSTANCE.daoToPojo(auctionListingRepository.save(listing).getSale());
     }

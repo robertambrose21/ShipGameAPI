@@ -1,5 +1,7 @@
 package com.robert.shipgame.auction.listing.api;
 
+import com.robert.shipgame.account.service.Account;
+import com.robert.shipgame.account.service.AccountService;
 import com.robert.shipgame.auction.bid.BidMapper;
 import com.robert.shipgame.auction.bid.api.dto.BidDTO;
 import com.robert.shipgame.auction.listing.AuctionListingMapper;
@@ -9,7 +11,6 @@ import com.robert.shipgame.auction.listing.api.dto.PlaceBidDTO;
 import com.robert.shipgame.auction.listing.api.dto.PurchaseAuctionListingDTO;
 import com.robert.shipgame.auction.listing.exception.AuctionListingException;
 import com.robert.shipgame.auction.listing.exception.AuctionListingNotFoundException;
-import com.robert.shipgame.auction.listing.exception.AuctionListingPurchaseException;
 import com.robert.shipgame.auction.listing.service.AuctionListingService;
 import com.robert.shipgame.auction.sale.SaleMapper;
 import com.robert.shipgame.auction.sale.api.SaleDTO;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class AuctionListingController {
 
     private final AuctionListingService auctionListingService;
+    private final AccountService accountService;
 
     @PreAuthorize("hasAuthority('Admin')")
     @GetMapping
@@ -54,13 +56,18 @@ public class AuctionListingController {
     @PostMapping("/purchase/{auctionListingId}")
     public SaleDTO purchase(@PathVariable final UUID auctionListingId,
                             @RequestBody @Valid PurchaseAuctionListingDTO dto) {
-        return SaleMapper.INSTANCE.pojoToDto(auctionListingService.purchase(auctionListingId, dto.price()));
+        final Account purchaser = accountService.getLoggedInAccount()
+                .orElseThrow(() -> new AuctionListingException("Cannot purchase an auction without a logged in user"));
+        return SaleMapper.INSTANCE.pojoToDto(auctionListingService.purchase(auctionListingId, dto.price(), purchaser));
     }
 
     @PostMapping("/bid/{auctionListingId}")
     public AuctionListingDTO placeBid(@PathVariable final UUID auctionListingId,
                                       @RequestBody @Valid PlaceBidDTO dto) {
-        return AuctionListingMapper.INSTANCE.pojoToDTO(auctionListingService.placeBid(auctionListingId, dto.price()));
+        final Account purchaser = accountService.getLoggedInAccount()
+                .orElseThrow(() -> new AuctionListingException("Cannot place a bid on an auction without a logged in user"));
+        return AuctionListingMapper.INSTANCE.pojoToDTO(
+                auctionListingService.placeBid(auctionListingId, dto.price(), purchaser));
     }
 
     @ExceptionHandler(AuctionListingNotFoundException.class)

@@ -10,9 +10,11 @@ import java.util.UUID;
 public record AuctionListingDTO(UUID id,
                                 UUID placedBy,
                                 String name,
-                                BigDecimal price,
+                                BigDecimal buyoutPrice,
+                                BigDecimal minimumBidPrice,
                                 BigDecimal highestBid,
                                 Instant whenListed,
-                                Instant whenExpires,
+                                Instant whenExpired,
+                                Instant whenFinalised,
                                 Instant whenSold) {
 }

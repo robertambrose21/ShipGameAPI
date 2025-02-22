@@ -4,6 +4,7 @@ import com.robert.shipgame.account.data.AccountDAO;
 import com.robert.shipgame.auction.bid.data.BidDAO;
 import com.robert.shipgame.auction.sale.data.SaleDAO;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,15 +26,23 @@ public final class AuctionListingDAO {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @NotNull
     private String name;
 
     @Positive
-    private BigDecimal price;
+    @NotNull
+    private BigDecimal buyoutPrice;
+
+    @Positive
+    @NotNull
+    private BigDecimal minimumBidPrice;
 
     @CreationTimestamp
     private Instant whenListed;
 
-    private Instant whenExpires;
+    private Instant whenExpired;
+
+    private Instant whenFinalised;
 
     @OneToOne(cascade = CascadeType.ALL)
     private SaleDAO sale;

@@ -8,5 +8,6 @@ import java.time.Instant;
 
 public record CreateOrUpdateAuctionListingDTO(@NotNull String name,
                                               @Positive BigDecimal price,
+                                              @Positive BigDecimal minimumBid,
                                               Instant whenExpires) {
 }

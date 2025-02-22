@@ -1,5 +1,6 @@
 package com.robert.shipgame.auction.sale.data;
 
+import com.robert.shipgame.account.data.AccountDAO;
 import com.robert.shipgame.auction.listing.data.AuctionListingDAO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -25,5 +26,8 @@ public class SaleDAO {
 
     @OneToOne
     private AuctionListingDAO auctionListing;
+
+    @ManyToOne
+    private AccountDAO purchaser;
 
 }
